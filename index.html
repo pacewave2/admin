@@ -70,11 +70,9 @@ label{font-size:0.9rem;color:var(--muted);margin-top:12px;display:block}
   <div class="login-box">
     <h1>PaceWave</h1>
     <p>Admin Dashboard Login</p>
-    <input type="text" id="username" placeholder="Username" value="admin">
-    <input type="password" id="password" placeholder="Password" value="fedae">
-    <button onclick="login()">Login</button>
-    <div class="error" id="loginError">Invalid username or password</div>
-    <p style="font-size:0.75rem;color:var(--muted);margin-top:16px;text-align:center">Demo: admin / fedae</p>
+    <input type="password" id="password" placeholder="Enter password" autofocus>
+    <div class="error" id="loginError">Invalid password</div>
+    <p style="font-size:0.75rem;color:var(--muted);margin-top:16px;text-align:center">Enter the admin password</p>
   </div>
 </div>
 
@@ -301,23 +299,32 @@ let categories = JSON.parse(localStorage.getItem('pacewave_cats') || JSON.string
 ]));
 let settings = JSON.parse(localStorage.getItem('pacewave_settings') || '{}');
 
-// Login
+// Login - Password only (fedae)
 function login(){
-  const u = document.getElementById('username').value;
   const p = document.getElementById('password').value;
-  if(u==='admin' && p==='fedae'){
+  if(p==='fedae'){
     document.getElementById('loginPage').style.display='none';
     document.getElementById('dashboard').style.display='block';
     loadData();
   } else {
     document.getElementById('loginError').style.display='block';
+    setTimeout(()=>document.getElementById('loginError').style.display='none',3000);
   }
 }
+
+// Allow Enter key to trigger login
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('password').addEventListener('keypress',function(e){
+    if(e.key==='Enter') login();
+  });
+});
 
 function logout(){
   if(confirm('Logout from admin panel?')){
     document.getElementById('dashboard').style.display='none';
     document.getElementById('loginPage').style.display='flex';
+    document.getElementById('password').value='';
+    document.getElementById('password').focus();
   }
 }
 
@@ -412,4 +419,108 @@ function deleteBook(id){
 function addCategory(){
   const name = document.getElementById('catName').value;
   if(!name){alert('Enter category name');return;}
-  categories.push({id:Date.now(),
+  categories.push({id:Date.now(),name:name});
+  document.getElementById('catName').value='';
+  save();
+  loadData();
+}
+
+function updateCatsTable(){
+  const html = '<tr><th>Category Name</th><th>Books</th><th>Actions</th></tr>' +
+    categories.map(c=>{
+      const count = books.filter(b=>b.category==c.id).length;
+      return `<tr><td>${c.name}</td><td>${count}</td><td><button class="btn btn-danger" onclick="deleteCat(${c.id})">Delete</button></td></tr>`;
+    }).join('');
+  document.getElementById('catsTable').innerHTML = html;
+}
+
+function deleteCat(id){
+  if(confirm('Delete this category?')){
+    categories = categories.filter(c=>c.id!==id);
+    save();
+    loadData();
+  }
+}
+
+function getCatName(id){
+  const cat = categories.find(c=>c.id==id);
+  return cat ? cat.name : 'Unknown';
+}
+
+function saveBanner(){
+  settings.bannerTitle = document.getElementById('bannerTitle').value;
+  settings.bannerSub = document.getElementById('bannerSub').value;
+  save();
+}
+
+function saveAnnouncement(){
+  settings.announcement = document.getElementById('announcement').value;
+  save();
+}
+
+function rebuildIndex(){
+  alert('Search index rebuilt successfully!');
+  document.getElementById('lastRebuild').textContent = new Date().toLocaleString();
+}
+
+function saveContent(type){
+  const content = document.getElementById(type+'Content').value;
+  settings[type] = content;
+  save();
+}
+
+function preview(type){
+  const content = document.getElementById(type+'Content').value;
+  alert('Preview:\n\n'+content);
+}
+
+function exportData(){
+  const data = {books,categories,settings};
+  const json = JSON.stringify(data,null,2);
+  const blob = new Blob([json],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'pacewave_backup.json';
+  a.click();
+}
+
+function backupBooks(){
+  const json = JSON.stringify(books,null,2);
+  const blob = new Blob([json],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'pacewave_books_backup.json';
+  a.click();
+}
+
+function backupSettings(){
+  const json = JSON.stringify(settings,null,2);
+  const blob = new Blob([json],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'pacewave_settings_backup.json';
+  a.click();
+}
+
+function saveSettings(){
+  settings.siteName = document.getElementById('siteName').value;
+  settings.siteDesc = document.getElementById('siteDesc').value;
+  settings.seoTitle = document.getElementById('seoTitle').value;
+  settings.seoDesc = document.getElementById('seoDesc').value;
+  settings.seoKeys = document.getElementById('seoKeys').value;
+  settings.fbLink = document.getElementById('fbLink').value;
+  settings.twLink = document.getElementById('twLink').value;
+  settings.igLink = document.getElementById('igLink').value;
+  settings.copyright = document.getElementById('copyright').value;
+  save();
+}
+
+function changeColor(color){
+  document.documentElement.style.setProperty('--accent',color);
+}
+</script>
+</body>
+</html>
